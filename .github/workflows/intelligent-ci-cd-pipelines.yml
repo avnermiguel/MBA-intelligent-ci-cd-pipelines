@@ -26,14 +26,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: . # Path to the build context (where your Dockerfile is)
-          push: true # Set to false if you only want to build, not push
-          tags: avnermiguel/mba-intelligent-ci-cd-pipelines:latest # Image tags
-          # cache-from: type=registry,ref=your-docker-username/your-image-name:cache # Optional: use registry cache
-          # cache-to: type=registry,ref=your-docker-username/your-image-name:cache,mode=max # Optional: push cache to registry
+      # - name: Build and push Docker image
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: . # Path to the build context (where your Dockerfile is)
+      #     push: true # Set to false if you only want to build, not push
+      #     tags: avnermiguel/mba-intelligent-ci-cd-pipelines:latest # Image tags
+      #     # cache-from: type=registry,ref=your-docker-username/your-image-name:cache # Optional: use registry cache
+      #     # cache-to: type=registry,ref=your-docker-username/your-image-name:cache,mode=max # Optional: push cache to registry
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -48,8 +48,14 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: ${{ env.AWS_REGION }}
+          region: ${{ env.AWS_REGION }}
           application_name: mba-intelligent-ci-cd-pipelines # Substitua pelo nome do seu Application
           environment_name: Mba-intelligent-ci-cd-pipelines-env # Substitua pelo nome do seu Environment
           version_label: ${{ github.sha }}
           deployment_package: Dockerrun.aws.json # Indica que o pacote de deploy é este arquivo
+
+      - name: Run container and test health
+        run: |
+          docker run -d -p 3000:3000 --name app avnermiguel/mba-intelligent-ci-cd-pipelines:latest
+          sleep 5
+          curl -f http://localhost:3000/ || (docker logs app && exit 1)
