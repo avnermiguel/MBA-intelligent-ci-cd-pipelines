@@ -6,10 +6,28 @@ on:
 
   workflow_dispatch:
 
-env:
-  AWS_REGION: us-east-1
+jobs:  
+  SAST-Analysis:
+    name: SAST Analysis (CodeQL)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # Permissão necessária para o CodeQL enviar os resultados
+      actions: read
 
-jobs:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          # O CodeQL suporta 'javascript', 'python', 'go', 'java', 'csharp', 'cpp', 'ruby', 'swift'
+          # Para o Juice Shop, que é baseado em Node.js, usamos 'javascript'.
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
   Build-and-Deploy:
     name: Build and Deploy Application
     runs-on: ubuntu-latest
@@ -41,16 +59,16 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region: ${{ env.AWS_REGION }}
-          application_name: mba-intelligent-ci-cd-pipelines # Substitua pelo nome do seu Application
-          environment_name: Mba-intelligent-ci-cd-pipelines-env # Substitua pelo nome do seu Environment
+          region: ${{ vars.AWS_REGION }}
+          application_name: ${{ vars.AWS_APPLICATION_NAME }} # Substitua pelo nome do seu Application
+          environment_name: ${{ vars.AWS_ENVIRONMENT_NAME }} # Substitua pelo nome do seu Environment
           version_label: ${{ github.sha }}
           deployment_package: Dockerrun.aws.json # Indica que o pacote de deploy é este arquivo
 
